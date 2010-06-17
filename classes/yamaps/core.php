@@ -1,149 +1,306 @@
 <?php defined('SYSPATH') or die('No direct access allowed.');
 
 /**
- * Yandex Maps API integration.
+ * Yamaps Core
  *
- * @package    Ymaps
- * @author     vit1251 <vit1251@gmail.com>
- * @author     avis <smgladkovskiy@gmail.com>
+ * @package Yamaps
+ * @author avis <smgladkovskiy@gmail.com>
  */
 class Yamaps_Core {
 
-	// Map settings
-	protected $id;
-	protected $center;
+	public static $instances = array();
 
-	// Map types
-	protected $types = array();
-	protected $default_types = array
-	(
+	public $icon;
+	public $map = array();
+	public $controlls = array();
+	public $options = array();
+	public $markers = array();
+	public $baloons = array();
+
+	protected $_config;
+	protected $_types = array(
 		'Y_MAP','Y_SATELLITE','Y_HYBRID'
 	);
+	protected $_controlls = array(
+		'TypeControl', 'ToolBar', 'Zoom', 'MiniMap', 'ScaleLine', 'SearchControl',
+	);
+	protected $_options = array(
+		'ScrollZoom', //@todo: describe all options
+	);
 
-	// Map markers
-	protected $markers = array();
-
-	// Map plylines
-	protected $polylines = array();
-
-	private static $_config;
 	/**
-	 * Set the YMap center point.
+	 * Yamaps class instance builder
 	 *
-	 * @param string $id HTML map id attribute
+	 * @param  mixed  $id
+	 * @return object Yamaps
+	 */
+	public static function instance($id = 1)
+	{
+		if( ! isset(self::$instances[$id]) OR ! is_object(self::$instances[$id]))
+		{
+			self::$instances[$id] = new Yamaps($id);
+		}
+
+		return self::$instances[$id];
+	}
+
+	/**
+	 * Yamaps constructor
+	 *
+	 * @param  mixed $id
 	 * @return void
 	 */
-	public function __construct($id = 'map')
+	public function __construct($id)
 	{
-		// Set map ID and options
-		$this->id = $id;
+		$this->map['id'] = 'Ymap-' . $id;
 		$this->_config = Kohana::config('yamaps');
+
+		$this->map['api_url'] = 'http://'.$this->_config->api_domain.'/'.$this->_config->version.'/index.xml?key=' . $this->_config->api_key;
 	}
 
 	/**
-	 * Return GMap javascript url
+	 * Set map zoom
 	 *
-	 * @param   string  API component
-	 * @param   array   API parameters
-	 * @return  string
+	 * @param  integer $zoom
+	 * @return object  Yamaps
 	 */
-	 public static function api_url($component = 'index.xml', $parameters = NULL, $separator = '&amp;')
-	 {
-		$config = Kohana::config('yamaps');
-		if (empty($parameters['key']))
+	public function zoom($zoom = 6)
+	{
+		$this->map['zoom'] = (int) $zoom;
+		return $this;
+	}
+
+	/**
+	 * Set map type
+	 *
+	 * @param  string $type_name
+	 * @return object Yamaps
+	 */
+	public function type($type_name = 'Y_MAP')
+	{
+		$this->map['type'] = arr::extract($this->_types, $type_name, 'Y_MAP');
+		return $this;
+	}
+
+	/**
+	 * Set dimensions of the map div
+	 *
+	 * @param  integer $width
+	 * @param  integer $height
+	 * @return object  Yamaps
+	 */
+	public function style($width = 600, $height = 600)
+	{
+		$this->map['style'] = array(
+			'width' => (int) $width,
+			'height' => (int) $height,
+		);
+		return $this;
+	}
+
+	/**
+	 * Set icon styles
+	 *
+	 * @uses   icon   section in config by default
+	 * @param  array  $optins
+	 * @return object Yamaps
+	 */
+	public function icon($optins = NULL)
+	{
+		if($optins === NULL)
 		{
-			// Set the API key last
-			$parameters['key'] = $config->api_key;
+			$this->icon = (isset($this->_config->icon['href']))
+				? View::factory('yamaps/icon')->bind('icon', $this->_config->icon)
+				: NULL;
+		}
+		else
+		{
+			$this->icon = View::factory('yamaps/icon')->bind('icon', $options);
 		}
 
-		return 'http://'.$config->api_domain.'/'.$config->version.'/'.$component.'?'.http_build_query($parameters, '', $separator);
-	 }
-
+		return $this;
+	}
 
 	/**
-	 * Set the GMap center point.
+	 * Create marker based on geo coordinates
 	 *
-	 * @chainable
-	 * @param float $lat latitude
-	 * @param float $lon longitude
-	 * @param integer $zoom zoom level (1-7)
-	 * @param string $type default map type
-	 * @return object
+	 * @param  array  $info
+	 * @param  array  $options
+	 * @return object Yamaps
 	 */
-	public function center($lon, $lat, $zoom = 6, $type = 'Y_MAP')
+	public function marker($info, $options = array())
 	{
-		$zoom = max(0, min(17, abs($zoom)));
-		$type = ($type != 'Y_MAP' AND in_array($type, $this->default_types, true)) ? $type : 'Y_MAP';
+		$this->add_marker($info, $options);
+		return $this;
+	}
 
-		// Set center location, zoom and default map type
-		$this->center = array($lat, $lon, $zoom, $type);
+	/**
+	 * Create marker based on address
+	 *
+	 * @param  array  $info
+	 * @param  array  $options
+	 * @return object Yamaps
+	 */
+	public function marker_geo($info, $options = array())
+	{
+		$this->add_marker_geo($info, $options);
+		return $this;
+	}
+
+	/**
+	 * Balloon creating dummy
+	 */
+	public function baloon()
+	{
+		return $this;
+	}
+
+	/**
+	 * Polyline creating dummy
+	 */
+	public function polyline()
+	{
+		return $this;
+	}
+
+	/**
+	 * Set map center coordinates
+	 *
+	 * @param  integer $lat
+	 * @param  integer $lon
+	 * @return object  Yamaps
+	 */
+	public function center($lat, $lon)
+	{
+		$this->map['center'] = array($lat, $lon);
+		return $this;
+	}
+
+	/**
+	 * Set controll object
+	 *
+	 * @param  mixed  $controll
+	 * @param  array  $options
+	 * @return object Yamaps
+	 */
+	public function controll($controll, $options = array())
+	{
+		$this->add_controll($controll, $options);
+		
+		return $this;
+	}
+
+	/**
+	 * Set map option
+	 *
+	 * @param  mixed  $name
+	 * @param  array  $options
+	 * @return object Yamaps
+	 */
+	public function option($name, $options = array())
+	{
+		$this->add_option($name, $options);
 
 		return $this;
 	}
 
 	/**
-	 * Set the YMap marker point.
+	 * Render map
 	 *
-	 * @chainable
-	 * @param float $lat latitude
-	 * @param float $lon longitude
-	 * @param string $html HTML for info window
-	 * @param array $options marker options
-	 * @return object
+	 * @return string Yamaps template view
 	 */
-	public function add_marker($lat, $lon, $html = '', $options = array())
+	public function render()
 	{
-		// Add a new marker
-		$this->markers[] = new Yamaps_Marker($lat, $lon, $html, $options);
+		if(! isset($this->map['style']))
+			$this->style();
 
-		return $this;
+		if(! isset($this->icon))
+			$this->icon();
+		
+		return View::factory('yamaps/template')
+			->bind('yamap', $this);
 	}
 
-	public function add_polyline($points, $options = array())
+	/**
+	 * Create controll object
+	 *
+	 * @todo   Add $options processing
+	 * @param  mixed $controll
+	 * @param  array $options
+	 * @return void
+	 */
+	private function add_controll($controll, $options = array())
 	{
-		// Create new Polyline object
-		$polyline = new Yamaps_Polyline( $options );
-
-		// Add point
-		foreach ($points as $point)
+		if(is_string($controll))
 		{
-			$polyline->add_point($point->lat, $point->lon);
+			if(in_array($controll, $this->_controlls, TRUE))
+				$this->controlls[] = 'map.addControl(new YMaps.' . $controll . '());';
 		}
 
-		// Add a new marker
-		$this->polylines[] = $polyline;
-
-		return $this;
+		if(is_array($controll))
+		{
+			foreach($controll as $controll_item)
+			{
+				$this->add_controll($controll_item, $options);
+			}
+		}
 	}
 
 	/**
-	 * Render the map into GMap Javascript.
+	 * Create option object
 	 *
-	 * @param string $template template name
-	 * @param array $extra extra fields passed to the template
-	 * @return string
+	 * @todo   Add $options processing
+	 * @param  mixed $name
+	 * @param  array $options
+	 * @return void
 	 */
-	public function render($template = 'yamaps/javascript', $extra = array())
+	private function add_option($name, $options = array())
 	{
-		// Latitude, longitude, zoom and default map type
-		list ($lat, $lon, $zoom, $default_type) = $this->center;
+		if(is_string($name))
+		{
+			if(in_array($name, $this->_options, TRUE))
+				$this->options[] = 'map.enable' . $name . '());';
+		}
 
-		// Map
-		$map = 'var map = new YMaps.Map(document.getElementById("'.$this->id.'"));';
-
-		// Map centering
-		$center = 'map.setCenter(new YMaps.GeoPoint('.$lon.', '.$lat.'), '.$zoom.');';
-
-		$data = array_merge($extra, array
-			(
-				'map' => $map,
-				'center' => $center,
-				'markers' => $this->markers,
-				'polylines' => $this->polylines,
-			));
-
-		// Render the Javascript
-		return View::factory($template, $data);
+		if(is_array($name))
+		{
+			foreach($name as $option_item)
+			{
+				$this->add_controll($option_item);
+			}
+		}
 	}
 
-} // End Ymap
+	/**
+	 * Create marker object using coordinates
+	 *
+	 * @todo   Add $options processing
+	 * @param  array $info
+	 * @param  array $options
+	 * @return void
+	 */
+	private function add_marker($info, $options)
+	{
+		$info['id'] = substr(md5(rand(0, 1000)), 0, 4);
+		$this->markers[] = View::factory('yamaps/marker/coordinates')
+			->bind('icon', $this->_config->icon)
+			->bind('marker', $info);
+	}
+
+	/**
+	 * Create marker object using geocoding
+	 *
+	 * @todo   Add $options processing
+	 * @param  array $info
+	 * @param  array $options
+	 * @return void
+	 */
+	private function add_marker_geo($info, $options)
+	{
+		$info['id'] = substr(md5(rand(0, 1000)), 0, 4);
+		$this->markers[] = View::factory('yamaps/marker/geocoded')
+			->bind('icon', $this->_config->icon)
+			->bind('marker', $info);
+	}
+
+} // End Yamaps_core
