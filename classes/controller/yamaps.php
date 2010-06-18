@@ -18,18 +18,20 @@ class Controller_Yamaps extends Controller {
 		$map = Yamaps::instance()
 			->zoom(10)
 			->center(37.64, 55.76)
-			->controll('Zoom')
+			->controlls(array('Zoom', 'TypeControl'))
+			->options(array('ScrollZoom'))
 			;
 
-		$map->marker(array(
-				'geo' => array(37.64, 55.76),
-				'name' => 'Tsest',
-				'description' => 'Test description',
+		$map->geo_marker(array(
+				'address' => 'Москва',
+				'name' => 'Moscow city',
+				'description' => 'Russian Federation capital',
 			));
+		
 		$map->marker(array(
 				'geo' => array(37.60, 55.70),
-				'name' => 'Tsest2',
-				'description' => 'Test2 description',
+				'name' => 'Some place to visit',
+				'description' => 'Damn! I forgot what it is!',
 			));
 
 		$this->request->response = $map->render();

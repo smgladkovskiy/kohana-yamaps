@@ -189,35 +189,45 @@ class Yamaps_Core {
 	}
 
 	/**
-	 * Set controll object
+	 * Set controll objects
 	 *
-	 * @param  mixed  $controll
+	 * @todo   Add $options processing
+	 * @param  array  $controlls
 	 * @param  array  $options
 	 * @return object Yamaps
 	 */
-	public function controll($controll, $options = array())
+	public function controlls($controlls, $options = array())
 	{
-		$this->controlls[] = array(
-			'name'    => $controll,
-			'options' => $options
-		);
+		$valid_controlls = arr::extract($this->_controlls, $controlls, NULL);
+
+		foreach($valid_controlls as $name => $options)
+		{
+			$this->controlls[] = array(
+				'name'    => $name,
+			);
+		}
 		
 		return $this;
 	}
 
 	/**
-	 * Set map option
+	 * Set map options
 	 *
-	 * @param  mixed  $option
+	 * @todo   Add $options processing
+	 * @param  array  $options_arr
 	 * @param  array  $options
 	 * @return object Yamaps
 	 */
-	public function option($option, $options = array())
+	public function options($options_arr, $options = array())
 	{
-		$this->options = array(
-			'name'    => $option,
-			'options' => $options
-		);
+		$valid_options = arr::extract($this->_options, $options_arr, NULL);
+
+		foreach($valid_options as $name => $options)
+		{
+			$this->options[] = array(
+				'name'    => $name,
+			);
+		}
 
 		return $this;
 	}
@@ -361,9 +371,7 @@ class Yamaps_Core {
 	{
 		$id = Arr::get($info, 'id', substr(md5(rand(0, 1000)), 0, 4));
 		$info = Arr::unshift($info, 'id', $id);
-		$this->markers[] = View::factory('yamaps/marker/coordinates')
-			->bind('icon', $this->_config->icon)
-			->bind('marker', $info);
+		$this->markers[] = $info;
 	}
 
 	/**
