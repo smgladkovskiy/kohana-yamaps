@@ -12,11 +12,11 @@ return array(
  */
 'icon' => array(
 //	'name' => 'someIconName',
-//	'href'   => "/images/up.png",
+//	'href'   => "/images/icon.png",
 //	'size'   => array(18, 29),
 //	'offset' => array(-9, -29),
 //	'shadow' => array(
-//		'href' => "/images/up.png",
+//		'href' => "/images/icon_shadow.png",
 //		'size' => array(18, 29),
 //		'offset' => array(-9, -29),
 //	),

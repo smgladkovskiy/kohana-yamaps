@@ -158,13 +158,13 @@ class Yamaps_Core {
 	}
 
 	/**
-	 * Set map center coordinates
+	 * Set map center based on geo coordinates
 	 *
 	 * @param  integer $lat
 	 * @param  integer $lon
 	 * @return object  Yamaps
 	 */
-	public function center($lat, $lon, $address = NULL)
+	public function center($lat, $lon)
 	{
 		$this->map['center'] = array($lat, $lon);
 		
@@ -172,7 +172,7 @@ class Yamaps_Core {
 	}
 
 	/**
-	 * Set map center coordinates
+	 * Set map center based on geo address
 	 *
 	 * @param  integer $lat
 	 * @param  integer $lon
@@ -195,7 +195,7 @@ class Yamaps_Core {
 	public function controll($controll, $options = array())
 	{
 		$this->controlls[] = array(
-			'name' => $controll,
+			'name'    => $controll,
 			'options' => $options
 		);
 		
@@ -212,7 +212,7 @@ class Yamaps_Core {
 	public function option($option, $options = array())
 	{
 		$this->options = array(
-			'name' => $option,
+			'name'    => $option,
 			'options' => $options
 		);
 
@@ -226,9 +226,11 @@ class Yamaps_Core {
 	 */
 	public function render()
 	{
+		// Force map style setting
 		if(! isset($this->map['style']))
 			$this->style();
 
+		// Force icon setting
 		if($this->icon === NULL)
 			$this->get_icon();
 
@@ -236,11 +238,21 @@ class Yamaps_Core {
 			->bind('yamap', $this);
 	}
 
+	/**
+	 * Initialize the YMap js object
+	 *
+	 * @return string
+	 */
 	public function set_map()
 	{
 		return 'var map = new YMaps.Map(YMaps.jQuery("#' . $this->map['id'] .'")[0]);';
 	}
 
+	/**
+	 * Set map center
+	 *
+	 * @return string
+	 */
 	public function set_center()
 	{
 		if(is_array($this->map['center']))
@@ -261,6 +273,11 @@ class Yamaps_Core {
 		}
 	}
 
+	/**
+	 * Set icon style
+	 *
+	 * @return string Yamaps icon view
+	 */
 	public function set_icon()
 	{
 		if($this->icon === NULL)
@@ -276,12 +293,9 @@ class Yamaps_Core {
 	}
 
 	/**
-	 * Create controll object
+	 * Set controll object
 	 *
-	 * @todo   Add $options processing
-	 * @param  mixed $controll
-	 * @param  array $options
-	 * @return void
+	 * @return string/NULL Yamaps controlls view
 	 */
 	public function set_controlls()
 	{
@@ -292,12 +306,9 @@ class Yamaps_Core {
 	}
 
 	/**
-	 * Create option object
+	 * Set option object
 	 *
-	 * @todo   Add $options processing
-	 * @param  mixed $name
-	 * @param  array $options
-	 * @return void
+	 * @return string/NULL Yamaps options view
 	 */
 	public function set_options()
 	{
@@ -307,6 +318,11 @@ class Yamaps_Core {
 			: NULL;
 	}
 
+	/**
+	 * Set marker objects
+	 *
+	 * @return string/NULL Yamaps coordinate markers view
+	 */
 	public function set_markers()
 	{
 		return (! empty($this->markers))
@@ -316,6 +332,11 @@ class Yamaps_Core {
 			: NULL;
 	}
 
+	/**
+	 * Set geo marker objects
+	 *
+	 * @return string/NULL Yamaps geocoded markers view
+	 */
 	public function set_geo_markers()
 	{
 		return (! empty($this->geo_markers))
@@ -357,6 +378,11 @@ class Yamaps_Core {
 		$this->geo_markers[] = $info;
 	}
 
+	/**
+	 * Populate icon information
+	 * 
+	 * @return void
+	 */
 	private function get_icon()
 	{
 		if($this->icon === NULL AND ! empty($this->_config->icon))
