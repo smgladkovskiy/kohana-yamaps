@@ -18,6 +18,7 @@ class Yamaps_Core {
 	public $markers     = array();
 	public $geo_markers = array();
 	public $baloons     = array();
+	public $polylines   = array();
 
 	// configs
 	protected $_config  = NULL;
@@ -104,11 +105,11 @@ class Yamaps_Core {
 	/**
 	 * Set icon styles
 	 *
-	 * @uses   icon   section in config by default
+	 * @todo   Add $options processing
 	 * @param  array  $optins
 	 * @return object Yamaps
 	 */
-	public function icon($optins = NULL)
+	public function icon($optins = NULL, $options = array())
 	{
 		$this->icon = $options;
 
@@ -125,6 +126,7 @@ class Yamaps_Core {
 	public function marker($info, $options = array())
 	{
 		$this->add_marker($info, $options);
+		
 		return $this;
 	}
 
@@ -138,6 +140,7 @@ class Yamaps_Core {
 	public function geo_marker($info, $options = array())
 	{
 		$this->add_geo_marker($info, $options);
+		
 		return $this;
 	}
 
