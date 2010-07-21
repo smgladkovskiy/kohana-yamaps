@@ -106,10 +106,10 @@ class Yamaps_Core {
 	 * Set icon styles
 	 *
 	 * @todo   Add $options processing
-	 * @param  array  $optins
+	 * @param  array  $options
 	 * @return object Yamaps
 	 */
-	public function icon($optins = NULL, $options = array())
+	public function icon($options = array())
 	{
 		$this->icon = $options;
 
