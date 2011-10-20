@@ -57,7 +57,7 @@ class Yamaps_Core {
 	public function __construct($id)
 	{
 		$this->map['id'] = 'Ymap-' . $id;
-		$this->_config = Kohana::config('yamaps');
+		$this->_config = Kohana::$config->load('yamaps');
 
 		$this->map['api_url'] = 'http://'.$this->_config->api_domain.'/'.$this->_config->version.'/index.xml?key=' . $this->_config->api_key;
 	}
@@ -126,7 +126,7 @@ class Yamaps_Core {
 	public function marker($info, $options = array())
 	{
 		$this->add_marker($info, $options);
-		
+
 		return $this;
 	}
 
@@ -140,7 +140,7 @@ class Yamaps_Core {
 	public function geo_marker($info, $options = array())
 	{
 		$this->add_geo_marker($info, $options);
-		
+
 		return $this;
 	}
 
@@ -170,7 +170,7 @@ class Yamaps_Core {
 	public function center($lat, $lon)
 	{
 		$this->map['center'] = array($lat, $lon);
-		
+
 		return $this;
 	}
 
@@ -206,7 +206,7 @@ class Yamaps_Core {
 				'name'    => $name,
 			);
 		}
-		
+
 		return $this;
 	}
 
@@ -391,7 +391,7 @@ class Yamaps_Core {
 
 	/**
 	 * Populate icon information
-	 * 
+	 *
 	 * @return void
 	 */
 	private function get_icon()
