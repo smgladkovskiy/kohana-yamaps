@@ -13,23 +13,55 @@ class Yamaps_Core {
 	// Map data
 	public $icon        = NULL;
 	public $map         = array();
-	public $controlls   = array();
+	public $controls    = array();
 	public $options     = array();
 	public $markers     = array();
-	public $geo_markers = array();
+	public $geomarkers = array();
 	public $baloons     = array();
 	public $polylines   = array();
+
+	// Controls
+	const ZOOMCTRL      = 'zoomControl';
+	const SMALLZOOMCTRL = 'smallZoomControl';
+	const SEARCHCTRL    = 'searchControl';
+	const TRAFFCTRL     = 'trafficControl';
+	const SCALELINE     = 'scaleLine';
+	const MINIMAP       = 'miniMap';
+	const TYPESELECT    = 'typeSelector';
+	const ROUTEEDTR     = 'routeEditor';
+
+	const MAP             = 'map';
+	const SATELLITE       = 'satellite';
+	const HYBRID          = 'hybrid';
+	const PUBLICMAP       = 'publicMap';
+	const PUBLICMAPHYBRID = 'publicMapHybrid';
+
+	const SCROLLZOOM      = 'scrollZoom';
 
 	// configs
 	protected $_config  = NULL;
 	protected $_types   = array(
-		'Y_MAP','Y_SATELLITE','Y_HYBRID'
+		self::MAP,
+		self::SATELLITE,
+		self::HYBRID,
+		self::PUBLICMAP,
+		self::PUBLICMAPHYBRID,
 	);
-	protected $_controlls = array(
-		'TypeControl', 'ToolBar', 'Zoom', 'MiniMap', 'ScaleLine', 'SearchControl',
+	protected $_controls = array(
+		self::ROUTEEDTR,
+		self::TYPESELECT,
+		self::ZOOMCTRL,
+		self::SMALLZOOMCTRL,
+		self::SCALELINE,
+		self::MINIMAP,
+		self::SEARCHCTRL,
+		self::TRAFFCTRL,
 	);
+
+
+
 	protected $_options = array(
-		'ScrollZoom', //@todo: describe all options
+		self::SCROLLZOOM
 	);
 
 	/**
@@ -41,9 +73,7 @@ class Yamaps_Core {
 	public static function instance($id = 1)
 	{
 		if( ! isset(self::$instances[$id]) OR ! is_object(self::$instances[$id]))
-		{
 			self::$instances[$id] = new Yamaps($id);
-		}
 
 		return self::$instances[$id];
 	}
@@ -56,10 +86,18 @@ class Yamaps_Core {
 	 */
 	public function __construct($id)
 	{
-		$this->map['id'] = 'Ymap-' . $id;
+		$this->map['id'] = '#yaMap-' . $id;
 		$this->_config = Kohana::$config->load('yamaps');
 
-		$this->map['api_url'] = 'http://'.$this->_config->api_domain.'/'.$this->_config->version.'/index.xml?key=' . $this->_config->api_key;
+		$options = array();
+		foreach($this->_config->options as $id => $val)
+		{
+			$options[] = $id.'='.$val;
+		}
+
+		$options = implode('&', $options);
+
+		$this->map['api_url'] = $this->_config->api_protocol.'://'.$this->_config->api_domain.'/'.$this->_config->api_version.'/?lang='.$this->_config->api_lang.'&'.$options;
 	}
 
 	/**
@@ -80,9 +118,9 @@ class Yamaps_Core {
 	 * @param  string $type_name
 	 * @return object Yamaps
 	 */
-	public function type($type_name = 'Y_MAP')
+	public function type($type_name = 'map')
 	{
-		$this->map['type'] = arr::extract($this->_types, $type_name, 'Y_MAP');
+		$this->map['type'] = 'yandex#'.Arr::get($this->_types, $type_name, 'map');
 		return $this;
 	}
 
@@ -96,7 +134,7 @@ class Yamaps_Core {
 	public function style($width = 600, $height = 600)
 	{
 		$this->map['style'] = array(
-			'width' => (int) $width,
+			'width'  => (int) $width,
 			'height' => (int) $height,
 		);
 		return $this;
@@ -105,7 +143,6 @@ class Yamaps_Core {
 	/**
 	 * Set icon styles
 	 *
-	 * @todo   Add $options processing
 	 * @param  array  $options
 	 * @return object Yamaps
 	 */
@@ -125,7 +162,7 @@ class Yamaps_Core {
 	 */
 	public function marker($info, $options = array())
 	{
-		$this->add_marker($info, $options);
+		$this->add_marker($info);
 
 		return $this;
 	}
@@ -139,7 +176,7 @@ class Yamaps_Core {
 	 */
 	public function geo_marker($info, $options = array())
 	{
-		$this->add_geo_marker($info, $options);
+		$this->add_marker($info, 'geo');
 
 		return $this;
 	}
@@ -191,21 +228,17 @@ class Yamaps_Core {
 	/**
 	 * Set controll objects
 	 *
-	 * @todo   Add $options processing
-	 * @param  array  $controlls
+	 * @param  array $controls
 	 * @param  array  $options
+	 *
 	 * @return object Yamaps
 	 */
-	public function controlls($controlls, $options = array())
+	public function controls($controls, $options = array())
 	{
-		$valid_controlls = arr::extract($this->_controlls, $controlls, NULL);
+		$valid_controls = Arr::extract($this->_controls, $controls, NULL);
 
-		foreach($valid_controlls as $name => $options)
-		{
-			$this->controlls[] = array(
-				'name'    => $name,
-			);
-		}
+		foreach($valid_controls as $name => $options)
+			$this->controls[] = $name;
 
 		return $this;
 	}
@@ -213,21 +246,16 @@ class Yamaps_Core {
 	/**
 	 * Set map options
 	 *
-	 * @todo   Add $options processing
 	 * @param  array  $options_arr
 	 * @param  array  $options
 	 * @return object Yamaps
 	 */
 	public function options($options_arr, $options = array())
 	{
-		$valid_options = arr::extract($this->_options, $options_arr, NULL);
+		$valid_options = Arr::extract($this->_options, $options_arr, NULL);
 
 		foreach($valid_options as $name => $options)
-		{
-			$this->options[] = array(
-				'name'    => $name,
-			);
-		}
+			$this->options[] = $name;
 
 		return $this;
 	}
@@ -243,12 +271,14 @@ class Yamaps_Core {
 		if(! isset($this->map['style']))
 			$this->style();
 
-		// Force icon setting
-		if($this->icon === NULL)
-			$this->get_icon();
+		if( !isset($this->map['type']))
+			$this->type();
 
-		return View::factory('yamaps/template')
-			->bind('yamap', $this);
+		$map  = HTML::script($this->map['api_url']);
+		$map .= $this->set_map();
+		$map .= '<div id="'.$this->map['id'].'" style="width: '.$this->map['style']['width'].'px; height: '.$this->map['style']['height'].'px"></div>';
+
+		return $map;
 	}
 
 	/**
@@ -258,32 +288,68 @@ class Yamaps_Core {
 	 */
 	public function set_map()
 	{
-		return 'var map = new YMaps.Map(YMaps.jQuery("#' . $this->map['id'] .'")[0]);';
-	}
+		$staticJS = class_exists('StaticJs');
+		$map = NULL;
 
-	/**
-	 * Set map center
-	 *
-	 * @return string
-	 */
-	public function set_center()
-	{
-		if(is_array($this->map['center']))
+		if(!$staticJS)
+			$map = '<script type="text/javascript">';
+
+		$map .= 'var map; ymaps.ready(function () {';
+		if(is_array($this->map['center'])) // Заданы координаты
 		{
-			return 'map.setCenter(new YMaps.GeoPoint(' . implode(', ', $this->map['center']) . '), ' . $this->map['zoom'] .');';
+			$map .= 'map = new ymaps.Map ("'.$this->map['id'].'", {
+			    center: ['.implode(', ', $this->map['center']).'],
+			    zoom: '.$this->map['zoom'].',
+			    type: "'.$this->map['type'].'"
+			});';
+			$map .= $this->set_controls();
+			$map .= $this->set_options();
+			$map .= $this->set_markers();
+			$map .= $this->set_geo_markers();
+		}
+		elseif(is_string($this->map['center'])) // Задано название города
+		{
+			$map .= 'var geocoder = ymaps.geocode("'.$this->map['center'].'", {results: 1});
+			geocoder.then(
+			    function (res) {
+			        map = new ymaps.Map ("'.$this->map['id'].'", {
+			            center: res.geoObjects.get(0).geometry.getCoordinates(),
+			            zoom: '.$this->map['zoom'].',
+			            type: "'.$this->map['type'].'"
+		            });'.
+				$this->set_controls().
+				$this->set_options().
+				$this->set_markers().
+				$this->set_geo_markers().
+				'},
+			    function (err) {
+			        alert("Ошибка определение координат города")
+			    }
+			);';
+		}
+		$map .= '});';
+
+		if(!$staticJS)
+		{
+			$map .= '</script>';
 		}
 		else
 		{
-			$center = '
-		var geocenter = new YMaps.Geocoder(\'' . $this->map['center']. '\');
-		YMaps.Events.observe(geocenter, geocenter.Events.Load, function () {
-			if (this.length()) {
-				map.setCenter(this.get(0).getGeoPoint(), ' . $this->map['zoom'] .');
-			}
-		})
-				';
-			return $center;
+			StaticJS::instance()->add_inline($map);
+			$map = NULL;
 		}
+
+		return $map;
+	}
+
+	/**
+	 * Initialize the YMap js object
+	 *
+	 * @return string
+	 */
+	public function set_type()
+	{
+		return "map.setType('".$this->map['type']."');";
 	}
 
 	/**
@@ -295,27 +361,49 @@ class Yamaps_Core {
 	{
 		if($this->icon === NULL)
 		{
-			$icon = NULL;
+			$icon = '{preset: "twirl#blueStretchyIcon"}';
 		}
 		else
 		{
-			$icon = View::factory('yamaps/icon')->bind('icon', $this->icon);
+			$icon = '{
+			    iconImageHref:         "'.Arr::get($this->icon, 'image_href').'", // картинка иконки
+			    iconImageSize:         ['.implode(', ', Arr::get($this->icon, 'image_size', array(0,0))).'], // размеры картинки
+				iconImageOffset:       ['.implode(', ', Arr::get($this->icon, 'image_offset', array(0,0))).'], // смещение картинки
+				iconShadow:            "'.Arr::get($this->icon, 'shadow', 'false').'", // наличие тени
+				iconShadowImageHref :  "'.Arr::get($this->icon, 'shadow_href').'", // картинка иконки
+				iconShadowImageSize:   ['.implode(', ', Arr::get($this->icon, 'shadow_size', array(0,0))).'], // смещение картинки
+				iconShadowImageOffset: ['.implode(', ', Arr::get($this->icon, 'shadow_offset', array(0,0))).'], // наличие тени
+			}';
 		}
 
 		return $icon;
 	}
 
+	public function set_balloon($marker)
+	{
+		$balloon = "{
+            balloonContentHeader: '".Arr::get($marker, 'header')."',
+            balloonContentBody:   '".Arr::get($marker, 'body')."',
+            balloonContentFooter: '".Arr::get($marker, 'footer')."'
+		}";
+
+		return $balloon;
+	}
+
 	/**
 	 * Set controll object
 	 *
-	 * @return string/NULL Yamaps controlls view
+	 * @return string/NULL Yamaps controls view
 	 */
-	public function set_controlls()
+	public function set_controls()
 	{
-		return ( ! empty($this->controlls))
-			? View::factory('yamaps/controlls')
-				->bind('controlls', $this->controlls)
-			: NULL;
+		$controls = array();
+		if( ! empty($this->controls))
+		{
+			foreach($this->controls as $control)
+				$controls[] = "map.controls.add('".$control."');";
+		}
+		return implode("\n", $controls);
 	}
 
 	/**
@@ -325,24 +413,72 @@ class Yamaps_Core {
 	 */
 	public function set_options()
 	{
-		return ( ! empty($this->options))
-			? View::factory('yamaps/options')
-				->bind('options', $this->options)
-			: NULL;
+		$options = array();
+		if( ! empty($this->options))
+		{
+			foreach($this->options as $option)
+				$options[] = 'map.behaviors.enable("'.$option.'");';
+		}
+		return implode("\n", $options);
 	}
 
 	/**
 	 * Set marker objects
 	 *
-	 * @return string/NULL Yamaps coordinate markers view
+	 * @param $type
+	 *
+	 * @return string
 	 */
-	public function set_markers()
+	public function set_markers($type = NULL)
 	{
-		return (! empty($this->markers))
-			? View::factory('yamaps/marker/coordinates')
-				->bind('markers', $this->markers)
-				->bind('icon', $this->icon)
-			: NULL;
+		$makers_name = $type.'markers';
+		$markers     = array();
+		if($this->{$makers_name})
+		{
+			foreach($this->{$makers_name} as $marker)
+			{
+				$placemark_name = 'placemark_'.$marker['id'];
+
+				$marker_js = NULL;
+				if($type)
+				{
+					$marker_js .= '
+						var myGeocoder = ymaps.geocode(
+						    "'.$marker['address'].'"
+//						  , {boundedBy: map.getBounds(),strictBounds: true, results: 1}
+						);
+						myGeocoder.then(function(res){
+							if (res.geoObjects.getLength()) {
+					            // point - первый элемент коллекции найденных объектов
+					            var coordinates_'.$marker['id'].' = res.geoObjects.get(0).geometry.getCoordinates();
+					        }
+						';
+				}
+				else
+				{
+					$marker_js .= 'var coordinates_'.$marker['id'].' = ['.implode(', ', $marker['geo']).'];';
+				}
+
+				$marker_js .= '
+					var '.$placemark_name.' = new ymaps.Placemark(
+					    coordinates_'.$marker['id'].'
+//					  , {hintContent: "'.$marker['header'].'"
+					  , '.$this->set_balloon($marker).'
+					  , '.$this->set_icon().'
+					  , {draggable: false/*, hideIconOnBalloonOpen: false*/}
+					);
+					map.geoObjects.add('.$placemark_name.');';
+
+				if($type)
+				{
+					$marker_js .= '});';
+				}
+
+				$markers[] = $marker_js;
+			}
+		}
+
+		return implode("\n", $markers);
 	}
 
 	/**
@@ -352,41 +488,22 @@ class Yamaps_Core {
 	 */
 	public function set_geo_markers()
 	{
-		return (! empty($this->geo_markers))
-			? View::factory('yamaps/marker/geocoded')
-				->bind('markers', $this->geo_markers)
-				->bind('icon', $this->icon)
-			: NULL;
+		return $this->set_markers('geo');
 	}
 
 	/**
 	 * Create marker object using coordinates
 	 *
-	 * @todo   Add $options processing
-	 * @param  array $info
-	 * @param  array $options
-	 * @return void
+	 * @param array  $info
+	 * @param string $type
 	 */
-	private function add_marker($info, $options)
+	private function add_marker($info, $type = '')
 	{
-		$id = Arr::get($info, 'id', substr(md5(rand(0, 1000)), 0, 4));
-		$info = Arr::unshift($info, 'id', $id);
-		$this->markers[] = $info;
-	}
+		$maker_name = $type.'markers';
+		$id         = Arr::get($info, 'id', substr(md5(rand(0, 1000)), 0, 4));
+		$info       = Arr::unshift($info, 'id', $id);
 
-	/**
-	 * Create marker object using geocoding
-	 *
-	 * @todo   Add $options processing
-	 * @param  array $info
-	 * @param  array $options
-	 * @return void
-	 */
-	private function add_geo_marker($info, $options)
-	{
-		$id = Arr::get($info, 'id', substr(md5(rand(0, 1000)), 0, 4));
-		$info = Arr::unshift($info, 'id', $id);
-		$this->geo_markers[] = $info;
+		$this->{$maker_name}[] = $info;
 	}
 
 	/**

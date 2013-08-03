@@ -17,24 +17,28 @@ class Controller_Yamaps extends Controller {
 		// Create a new Ymap
 		$map = Yamaps::instance()
 			->zoom(10)
-			->center(37.64, 55.76)
-			->controlls(array('Zoom', 'TypeControl'))
-			->options(array('ScrollZoom'))
+			->center(55.76, 37.64)
+			->controls(array(Yamaps::ZOOMCTRL, Yamaps::TYPESELECT))
+			->options(array(Yamaps::SCROLLZOOM))
 			;
 
 		$map->geo_marker(array(
 				'address' => 'Москва',
-				'name' => 'Moscow city',
-				'description' => 'Russian Federation capital',
-			));
-		
-		$map->marker(array(
-				'geo' => array(37.60, 55.70),
-				'name' => 'Some place to visit',
-				'description' => 'Damn! I forgot what it is!',
+				'header' => 'Moscow city',
+				'body' => 'Russian Federation capital',
 			));
 
-		$this->request->response = $map->render();
+		$map->marker(array(
+				'geo' => array(55.70, 37.60),
+				'header' => 'Some place to visit',
+				'body' => 'Damn! I forgot what it is!',
+			));
+
+		$body = $map->render();
+		if(class_exists('StaticJs'))
+			$body .= StaticJs::instance()->get_all();
+
+		$this->response->body($body);
 	}
 
 } // End Controller_Yamaps
