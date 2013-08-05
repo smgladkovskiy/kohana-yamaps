@@ -320,7 +320,7 @@ class Yamaps_Core {
 		if(!$staticJS)
 			$map = '<script type="text/javascript">';
 
-		$map .= 'var map; ymaps.ready(function () {';
+		$map .= 'var map, placemarks = []; ymaps.ready(function () {';
 		if(is_array($this->map['center'])) // Заданы координаты
 		{
 			$map .= 'map = new ymaps.Map ("'.$this->map['id'].'", {
@@ -463,7 +463,7 @@ class Yamaps_Core {
 		{
 			foreach($this->{$makers_name} as $marker)
 			{
-				$placemark_name = 'placemark_'.$marker['id'];
+				$placemark_name = 'placemarks['.$marker['id'].']';
 
 				$marker_js = NULL;
 				if($type)
@@ -486,7 +486,7 @@ class Yamaps_Core {
 				}
 
 				$marker_js .= '
-					var '.$placemark_name.' = new ymaps.Placemark(
+					'.$placemark_name.' = new ymaps.Placemark(
 					    coordinates_'.$marker['id'].'
 //					  , {hintContent: "'.$marker['header'].'"
 					  , '.$this->set_balloon($marker).'
