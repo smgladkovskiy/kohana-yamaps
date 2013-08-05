@@ -131,12 +131,32 @@ class Yamaps_Core {
 	 * @param  integer $height
 	 * @return object  Yamaps
 	 */
-	public function style($width = 600, $height = 600)
+	public function style( array $style)
 	{
-		$this->map['style'] = array(
-			'width'  => (int) $width,
-			'height' => (int) $height,
-		);
+		if(!Arr::get($this->map, 'style'))
+			$this->map['style'] = array();
+
+		$this->map['style'] += $style;
+
+		return $this;
+	}
+	/**
+	 * Set dimensions of the map div
+	 *
+	 * @param  integer $width
+	 * @param  integer $height
+	 * @return object  Yamaps
+	 */
+	public function map_size($width = 600, $height = 600)
+	{
+		if( ! Arr::get($this->map, 'style'))
+			$this->map['style'] = array();
+
+			$this->map['style'] += array(
+				'width'  => intval($width).'px',
+				'height' => intval($height).'px',
+			);
+
 		return $this;
 	}
 
@@ -268,15 +288,21 @@ class Yamaps_Core {
 	public function render()
 	{
 		// Force map style setting
-		if(! isset($this->map['style']))
-			$this->style();
+		if(! Arr::path($this->map, 'style.width'))
+			$this->map_size();
+
+		$style = array();
+		foreach($this->map['style'] as $var => $val)
+		{
+			$style[] = $var.': '.$val;
+		}
 
 		if( !isset($this->map['type']))
 			$this->type();
 
 		$map  = HTML::script($this->map['api_url']);
 		$map .= $this->set_map();
-		$map .= '<div id="'.$this->map['id'].'" style="width: '.$this->map['style']['width'].'px; height: '.$this->map['style']['height'].'px"></div>';
+		$map .= '<div id="'.$this->map['id'].'" style="'.implode('; ', $style).'"></div>';
 
 		return $map;
 	}
